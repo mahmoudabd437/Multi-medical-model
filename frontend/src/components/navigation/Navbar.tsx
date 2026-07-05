@@ -1,0 +1,104 @@
+import { Menu, Microscope, Search } from 'lucide-react';
+import { Link, NavLink } from 'react-router-dom';
+import { publicNavigation } from '@/routes/navigation';
+import { Avatar } from '@/components/ui/Avatar';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/hooks/useAuth';
+import { cn } from '@/lib/cn';
+
+type NavbarProps = {
+  mode: 'public' | 'dashboard';
+  onMenuClick?: () => void;
+  title?: string;
+  subtitle?: string;
+};
+
+export function Navbar({ mode, onMenuClick, title = 'Medical AI Dashboard', subtitle = 'Premium clinical workspace' }: NavbarProps) {
+  const { user } = useAuth();
+
+  if (mode === 'public') {
+    return (
+      <header className="sticky top-0 z-40 border-b border-white/8 bg-slate-950/70 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-medical-400 to-sky-500 text-slate-950 shadow-glow">
+              <Microscope className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Multi Medical Model</p>
+              <p className="text-xs text-slate-400">AI medical intelligence platform</p>
+            </div>
+          </Link>
+
+          <nav className="hidden items-center gap-2 lg:flex">
+            {publicNavigation.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  cn(
+                    'rounded-full px-4 py-2 text-sm font-medium transition',
+                    isActive ? 'bg-white/12 text-white' : 'text-slate-300 hover:bg-white/8 hover:text-white',
+                  )
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <Badge variant="info" className="hidden sm:inline-flex">
+              Dark only
+            </Badge>
+            <Button type="button" variant="ghost" className="hidden sm:inline-flex">
+              <Search className="h-4 w-4" />
+              Search
+            </Button>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  return (
+    <header className="sticky top-0 z-30 border-b border-white/8 bg-slate-950/72 backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onMenuClick}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-white transition hover:bg-white/12 lg:hidden"
+            aria-label="Open navigation"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-medical-300">{title}</p>
+            <div className="mt-1 flex items-center gap-2 text-sm text-slate-400">
+              <span>{subtitle}</span>
+              <span className="hidden h-1 w-1 rounded-full bg-slate-500 sm:inline-block" />
+              <span className="hidden sm:inline-flex">{user?.department ?? 'Clinical'} workspace</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button type="button" variant="secondary" className="hidden sm:inline-flex">
+            <Search className="h-4 w-4" />
+            Search studies
+          </Button>
+          <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/6 px-3 py-2">
+            <Avatar name={user?.name ?? 'Guest'} initials={user?.initials ?? 'GD'} className="h-9 w-9" />
+            <div className="hidden text-left sm:block">
+              <p className="text-sm font-semibold text-white">{user?.name ?? 'Guest User'}</p>
+              <p className="text-xs text-slate-400">{user?.role ?? 'Viewer'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
