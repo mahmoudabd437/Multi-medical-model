@@ -17,9 +17,13 @@ class HistoryListView(APIView):
 
         status_filter = serializer.validated_data.get('status')
         search_term = serializer.validated_data.get('search')
+        modality = serializer.validated_data.get('modality')
 
         if status_filter and status_filter.lower() not in {'completed', 'all'}:
             queryset = queryset.none()
+
+        if modality:
+            queryset = queryset.filter(modality=modality)
 
         if search_term:
             queryset = queryset.filter(

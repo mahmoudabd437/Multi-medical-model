@@ -8,6 +8,7 @@ from apps.predictions.models import ChestXrayPrediction
 class HistoryFilterSerializer(serializers.Serializer):
     status = serializers.CharField(required=False, allow_blank=True)
     search = serializers.CharField(required=False, allow_blank=True)
+    modality = serializers.CharField(required=False, allow_blank=True)
     page = serializers.IntegerField(required=False, min_value=1)
 
 
@@ -24,6 +25,7 @@ class HistoryRecordSerializer(serializers.ModelSerializer):
         model = ChestXrayPrediction
         fields = [
             'id',
+            'modality',
             'study_type',
             'patient_ref',
             'status',

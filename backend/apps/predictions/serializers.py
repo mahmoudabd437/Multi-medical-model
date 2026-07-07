@@ -29,6 +29,17 @@ class ChestXrayUploadSerializer(serializers.Serializer):
     )
 
 
+class BrainMRIUploadSerializer(serializers.Serializer):
+    image = serializers.ImageField()
+    study_id = serializers.CharField(required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    model = serializers.ChoiceField(
+        choices=['efficientnetb0_mri', 'vit_mri'],
+        required=False,
+        allow_blank=True,
+    )
+
+
 class ChestXrayPredictionSerializer(serializers.ModelSerializer):
     study_type = serializers.SerializerMethodField()
     patient_ref = serializers.CharField(source='study_id', read_only=True)
@@ -40,6 +51,7 @@ class ChestXrayPredictionSerializer(serializers.ModelSerializer):
         model = ChestXrayPrediction
         fields = [
             'id',
+            'modality',
             'study_type',
             'patient_ref',
             'status',

@@ -3,6 +3,7 @@ import type { ApiResponse, PaginatedResponse } from '@/services/api/types';
 
 export type HistoryRecord = {
   id: string;
+  modality?: string;
   study_type: string;
   patient_ref: string;
   status: string;

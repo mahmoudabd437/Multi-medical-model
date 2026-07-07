@@ -36,6 +36,15 @@ export type ChestXrayAnalyzeRequest = {
   model?: 'efficientnetb0' | 'densenet121' | 'custom_cnn';
 };
 
+export type BrainMRIModelKey = 'efficientnetb0_mri' | 'vit_mri';
+
+export type BrainMRIAnalyzeRequest = {
+  image: File;
+  study_id?: string;
+  notes?: string;
+  model?: BrainMRIModelKey;
+};
+
 export type ChestXrayAnalyzeResponse = {
   id: string;
   prediction: 'Normal' | 'Pneumonia';
@@ -44,6 +53,20 @@ export type ChestXrayAnalyzeResponse = {
   class_index: 0 | 1;
   model: string;
   threshold: number;
+  version: string;
+  inference_time: string;
+  medical_note: string;
+  created_at: string;
+};
+
+export type BrainMRIAnalyzeResponse = {
+  id: string;
+  prediction: 'Glioma' | 'Meningioma' | 'No Tumor' | 'Pituitary Tumor' | string;
+  confidence: number;
+  probability: number;
+  class_index: number;
+  scores: Record<string, number>;
+  model: string;
   version: string;
   inference_time: string;
   medical_note: string;
@@ -114,5 +137,56 @@ export async function analyzeChestXray(payload: ChestXrayAnalyzeRequest): Promis
     }
 
     throw requestError instanceof Error ? requestError : new Error('Prediction failed.');
+  }
+}
+
+export async function analyzeBrainMRI(payload: BrainMRIAnalyzeRequest): Promise<BrainMRIAnalyzeResponse> {
+  const formData = new FormData();
+  formData.append('image', payload.image);
+
+  if (payload.study_id) {
+    formData.append('study_id', payload.study_id);
+  }
+
+  if (payload.notes) {
+    formData.append('notes', payload.notes);
+  }
+
+  if (payload.model) {
+    formData.append('model', payload.model);
+  }
+
+  try {
+    const response = await apiClient.post<BrainMRIAnalyzeResponse>('/predict/brain-mri/', formData, {
+      headers: {
+        'Content-Type': undefined,
+      },
+    });
+
+    return response.data;
+  } catch (requestError) {
+    if (axios.isAxiosError(requestError)) {
+      const responseMessage = requestError.response?.data;
+      if (responseMessage && typeof responseMessage === 'object') {
+        const apiMessage = (responseMessage as { message?: unknown }).message;
+        if (typeof apiMessage === 'string' && apiMessage.trim()) {
+          throw new Error(apiMessage);
+        }
+
+        const apiErrors = (responseMessage as { errors?: unknown }).errors;
+        if (typeof apiErrors === 'string' && apiErrors.trim()) {
+          throw new Error(apiErrors);
+        }
+        if (apiErrors && typeof apiErrors === 'object') {
+          throw new Error(JSON.stringify(apiErrors));
+        }
+      }
+
+      if (requestError.message) {
+        throw new Error(requestError.message);
+      }
+    }
+
+    throw requestError instanceof Error ? requestError : new Error('Brain MRI analysis failed.');
   }
 }

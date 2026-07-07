@@ -6,8 +6,17 @@ from django.db import models
 
 
 class ChestXrayPrediction(models.Model):
+    MODALITY_CHEST_XRAY = 'chest_xray'
+    MODALITY_BRAIN_MRI = 'brain_mri'
+
+    MODALITY_CHOICES = [
+        (MODALITY_CHEST_XRAY, 'Chest X-ray'),
+        (MODALITY_BRAIN_MRI, 'Brain MRI'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     image = models.ImageField(upload_to='chest_xray/')
+    modality = models.CharField(max_length=32, choices=MODALITY_CHOICES, default=MODALITY_CHEST_XRAY)
     study_id = models.CharField(max_length=128, blank=True, default='')
     notes = models.TextField(blank=True, default='')
     prediction = models.CharField(max_length=32)
@@ -29,4 +38,4 @@ class ChestXrayPrediction(models.Model):
 
     @property
     def study_type(self) -> str:
-        return 'Chest X-ray'
+        return dict(self.MODALITY_CHOICES).get(self.modality, 'Chest X-ray')
