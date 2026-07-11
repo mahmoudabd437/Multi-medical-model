@@ -13,6 +13,7 @@ from apps.face_recognition.serializers import (
 )
 from services.ai.face_recognition_service import (
     EnrollmentError,
+    DuplicateEnrollmentError,
     FaceRecognitionServiceError,
     ImageProcessingError,
     MatchError,
@@ -111,9 +112,30 @@ class FaceEnrollmentView(APIView):
             return error_response(str(exc), status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
         except ImageProcessingError as exc:
             return error_response(str(exc), status_code=status.HTTP_400_BAD_REQUEST)
+        except DuplicateEnrollmentError as exc:
+            return error_response(str(exc), status_code=status.HTTP_409_CONFLICT)
         except EnrollmentError as exc:
             return error_response(str(exc), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except FaceRecognitionServiceError as exc:
             return error_response(str(exc), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return success_response(result, message='Face enrollment completed', status_code=status.HTTP_201_CREATED)
+
+
+class FaceEnrollmentDeleteView(APIView):
+    permission_classes = [AllowAny]
+
+    def delete(self, request, enrollment_id: str):
+        from apps.face_recognition.models import FaceEnrollment
+
+        enrollment = FaceEnrollment.objects.filter(id=enrollment_id).first()
+        if enrollment is None:
+            return error_response('Face enrollment not found.', status_code=status.HTTP_404_NOT_FOUND)
+
+        payload = {
+            'id': str(enrollment.id),
+            'person_id': enrollment.person_id,
+            'person_name': enrollment.person_name,
+        }
+        enrollment.delete()
+        return success_response(payload, message='Face enrollment deleted', status_code=status.HTTP_200_OK)

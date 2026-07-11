@@ -81,6 +81,12 @@ export type FaceEnrollmentResponse = {
   message: string;
 };
 
+export type FaceEnrollmentDeleteResponse = {
+  id: string;
+  person_id: string;
+  person_name: string;
+};
+
 export async function listFaceRecognitionRecords(): Promise<PaginatedResponse<FaceRecognitionRecord>> {
   const response = await apiClient.get<ApiResponse<PaginatedResponse<FaceRecognitionRecord>>>('/face-recognition/');
   return response.data.data;
@@ -120,5 +126,10 @@ export async function enrollFace(payload: FaceEnrollmentRequest): Promise<FaceEn
       'Content-Type': 'multipart/form-data',
     },
   });
+  return response.data.data;
+}
+
+export async function deleteFaceEnrollment(enrollmentId: string): Promise<FaceEnrollmentDeleteResponse> {
+  const response = await apiClient.delete<ApiResponse<FaceEnrollmentDeleteResponse>>(`/face-recognition/${enrollmentId}/`);
   return response.data.data;
 }

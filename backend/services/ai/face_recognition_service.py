@@ -22,6 +22,7 @@ except Exception:  # pragma: no cover - import availability depends on deploymen
 MODEL_VERSION = '1.0.0'
 FACE_DETECTION_SIZE = (640, 640)
 DEFAULT_SIMILARITY_THRESHOLD = 0.45
+DEFAULT_DUPLICATE_ENROLLMENT_THRESHOLD = 0.7
 MIN_FACE_CONFIDENCE = 0.0
 MODEL_DIR = Path(settings.BASE_DIR) / 'services' / 'ai' / 'models'
 
@@ -43,6 +44,10 @@ class EnrollmentError(FaceRecognitionServiceError):
 
 
 class MatchError(FaceRecognitionServiceError):
+    pass
+
+
+class DuplicateEnrollmentError(EnrollmentError):
     pass
 
 
@@ -126,11 +131,42 @@ def enrollment_payload(enrollment: Any) -> dict[str, Any]:
     }
 
 
+def _similarity(a: np.ndarray, b: np.ndarray) -> float:
+    return float(np.dot(a, b))
+
+
+def _find_duplicate_enrollment(query_embedding: np.ndarray) -> dict[str, Any] | None:
+    from apps.face_recognition.models import FaceEnrollment
+
+    duplicate_candidate: dict[str, Any] | None = None
+    for enrollment in FaceEnrollment.objects.all():
+        stored_embedding = np.asarray(enrollment.embedding, dtype=np.float32)
+        if stored_embedding.size == 0:
+            continue
+
+        similarity = _similarity(query_embedding, stored_embedding)
+        if similarity >= DEFAULT_DUPLICATE_ENROLLMENT_THRESHOLD:
+            candidate = {
+                'id': str(enrollment.id),
+                'person_id': enrollment.person_id,
+                'person_name': enrollment.person_name,
+                'similarity': round(similarity, 4),
+            }
+            if duplicate_candidate is None or candidate['similarity'] > duplicate_candidate['similarity']:
+                duplicate_candidate = candidate
+
+    return duplicate_candidate
+
+
 def enroll_face(*, person_name: str, image_file, person_id: str | None = None, notes: str = '') -> dict[str, Any]:
     from apps.face_recognition.models import FaceEnrollment
 
     start_time = time.perf_counter()
     embedding, metadata = extract_face_embedding(image_file)
+    duplicate_candidate = _find_duplicate_enrollment(embedding)
+    if duplicate_candidate is not None:
+        raise DuplicateEnrollmentError('There is already enrolled face.')
+
     resolved_person_id = (person_id or '').strip() or f"{_slugify_person_name(person_name)}_{uuid.uuid4().hex[:8]}"
     source_image_name = getattr(image_file, 'name', '') or ''
 
@@ -163,10 +199,6 @@ def enroll_face(*, person_name: str, image_file, person_id: str | None = None, n
         'message': 'Face enrolled successfully.',
         'enrollment': enrollment_payload(enrollment),
     }
-
-
-def _similarity(a: np.ndarray, b: np.ndarray) -> float:
-    return float(np.dot(a, b))
 
 
 def match_face(*, image_file, person_id: str | None = None, threshold: float = DEFAULT_SIMILARITY_THRESHOLD) -> dict[str, Any]:
