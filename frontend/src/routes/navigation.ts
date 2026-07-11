@@ -26,7 +26,7 @@ export const sidebarNavigation: NavigationItem[] = [
   { label: 'Chest X-ray', path: '/chest-xray', description: 'Radiology workstation', icon: Stethoscope },
   { label: 'Brain MRI', path: '/brain-mri', description: 'Neurology pipeline', icon: Brain },
   { label: 'Skin Disease', path: '/skin-disease', description: 'Dermatology pipeline', icon: ShieldPlus, comingSoon: true },
-  { label: 'Face Recognition', path: '/face-recognition', description: 'Identity workflows', icon: Camera, comingSoon: true },
+  { label: 'Face Recognition', path: '/face-recognition', description: 'Identity workflows', icon: Camera },
   { label: 'History', path: '/history', description: 'Past sessions and audits', icon: FileClock },
   { label: 'Profile', path: '/profile', description: 'Clinician profile', icon: UserRound },
   { label: 'Settings', path: '/settings', description: 'App and security settings', icon: Settings2 },

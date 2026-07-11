@@ -7,3 +7,6 @@ psycopg[binary]>=3.2,<4.0
 tensorflow>=2.15.0
 keras-hub>=0.21.0
 Pillow>=10.0.0
+opencv-python-headless>=4.10.0.84
+insightface>=0.7.3
+onnxruntime>=1.18.0,<2.0.0

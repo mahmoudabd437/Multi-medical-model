@@ -1,60 +1,108 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Search, UserPlus, Loader2 } from 'lucide-react';
-import { ComingSoonState } from '@/components/ui/ComingSoonState';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { SectionHeader } from '@/components/ui/SectionHeader';
+import { Camera, Loader2, Search, ShieldCheck, Upload, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 import { enrollFace, listFaceRecognitionRecords, matchFace, type FaceRecognitionRecord } from '@/services/api/faceRecognition';
 
 export default function FaceRecognition() {
   const [records, setRecords] = useState<FaceRecognitionRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [working, setWorking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [matchForm, setMatchForm] = useState({ image_id: 'face_img_001', person_id: 'person_001' });
-  const [enrollForm, setEnrollForm] = useState({ person_name: 'Test Subject', image_id: 'face_img_002' });
+  const [matchWorking, setMatchWorking] = useState(false);
+  const [enrollWorking, setEnrollWorking] = useState(false);
+  const [matchFileKey, setMatchFileKey] = useState(0);
+  const [enrollFileKey, setEnrollFileKey] = useState(0);
+  const [matchForm, setMatchForm] = useState<{ person_id: string; threshold: string; image: File | null }>({
+    person_id: '',
+    threshold: '0.45',
+    image: null,
+  });
+  const [enrollForm, setEnrollForm] = useState<{ person_name: string; person_id: string; notes: string; image: File | null }>({
+    person_name: '',
+    person_id: '',
+    notes: '',
+    image: null,
+  });
+
+  const loadRecords = async () => {
+    try {
+      setLoading(true);
+      const response = await listFaceRecognitionRecords();
+      setRecords(response.items);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadRecords = async () => {
-      try {
-        setLoading(true);
-        const response = await listFaceRecognitionRecords();
-        setRecords(response.items);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     void loadRecords();
   }, []);
 
+  const resetEnrollForm = () => {
+    setEnrollForm({ person_name: '', person_id: '', notes: '', image: null });
+    setEnrollFileKey((current) => current + 1);
+  };
+
+  const resetMatchForm = () => {
+    setMatchForm({ person_id: '', threshold: '0.45', image: null });
+    setMatchFileKey((current) => current + 1);
+  };
+
   const handleMatch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!matchForm.image) {
+      setMessage('Please choose a face image for matching.');
+      return;
+    }
+
     try {
-      setWorking(true);
+      setMatchWorking(true);
       setMessage(null);
-      const response = await matchFace(matchForm);
-      setMessage(response.message);
+      const response = await matchFace({
+        image: matchForm.image,
+        person_id: matchForm.person_id.trim() || undefined,
+        threshold: Number(matchForm.threshold) || 0.45,
+      });
+      setMessage(
+        response.match_found
+          ? `Match found: ${response.match?.person_name ?? 'Unknown'} (${response.confidence.toFixed(2)}%) in ${response.inference_time}.`
+          : `${response.message} Similarity: ${(response.similarity * 100).toFixed(2)}%.`,
+      );
+      await loadRecords();
+      resetMatchForm();
     } catch (requestError) {
       setMessage(requestError instanceof Error ? requestError.message : 'Match request failed.');
     } finally {
-      setWorking(false);
+      setMatchWorking(false);
     }
   };
 
   const handleEnroll = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!enrollForm.image) {
+      setMessage('Please choose a face image for enrollment.');
+      return;
+    }
+
     try {
-      setWorking(true);
+      setEnrollWorking(true);
       setMessage(null);
-      const response = await enrollFace(enrollForm);
-      setMessage(response.message);
+      const response = await enrollFace({
+        person_name: enrollForm.person_name,
+        person_id: enrollForm.person_id.trim() || undefined,
+        notes: enrollForm.notes.trim() || undefined,
+        image: enrollForm.image,
+      });
+      setMessage(`Enrolled ${response.person_name} as ${response.person_id}.`);
+      await loadRecords();
+      resetEnrollForm();
     } catch (requestError) {
       setMessage(requestError instanceof Error ? requestError.message : 'Enrollment request failed.');
     } finally {
-      setWorking(false);
+      setEnrollWorking(false);
     }
   };
 
@@ -63,9 +111,9 @@ export default function FaceRecognition() {
       <motion.section initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
         <SectionHeader
           eyebrow="Face Recognition"
-          title="Identity workflow placeholder"
-          description="The backend already exposes a face-recognition route, and this page exercises it with mock responses so the UI is ready for future enrollment and matching logic."
-          action={<Badge variant="warning">Placeholder API</Badge>}
+          title="Identity workflow"
+          description="Enroll faces and verify them against the server-side InsightFace embedding store."
+          action={<Badge variant="success">Live API</Badge>}
         />
       </motion.section>
 
@@ -80,18 +128,29 @@ export default function FaceRecognition() {
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-medical-300">Records</p>
           <div className="mt-4 space-y-3">
             {loading ? (
-              <div className="rounded-3xl border border-white/8 bg-white/6 p-4 text-sm text-slate-400">Loading placeholder records...</div>
+              <div className="rounded-3xl border border-white/8 bg-white/6 p-4 text-sm text-slate-400">Loading enrolled faces...</div>
             ) : records.length > 0 ? (
               records.map((record) => (
                 <div key={record.id} className="rounded-3xl border border-white/8 bg-white/6 p-4 text-sm text-slate-300">
-                  <p className="font-semibold text-white">{record.status}</p>
-                  <p className="mt-2 text-slate-400">{record.message}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-white">{record.person_name}</p>
+                      <p className="text-xs text-slate-400">{record.person_id}</p>
+                    </div>
+                    <Badge variant="info">{record.embedding_size} dims</Badge>
+                  </div>
+                  <div className="mt-3 grid gap-2 text-xs text-slate-400 sm:grid-cols-2">
+                    <p>Matches: {record.match_count}</p>
+                    <p>Similarity: {record.last_similarity !== null ? record.last_similarity.toFixed(3) : 'n/a'}</p>
+                    <p className="sm:col-span-2">Source: {record.source_image_name || 'Uploaded image'}</p>
+                    {record.notes ? <p className="sm:col-span-2">Notes: {record.notes}</p> : null}
+                  </div>
                 </div>
               ))
             ) : (
               <EmptyState
-                title="No placeholder records"
-                description="The face recognition endpoint returned an empty list."
+                title="No enrolled faces yet"
+                description="Enroll your first face image to populate the identity registry."
                 icon={Camera}
               />
             )}
@@ -99,44 +158,6 @@ export default function FaceRecognition() {
         </GlassCard>
 
         <div className="space-y-4">
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-medical-500/12 p-3 text-medical-200 ring-1 ring-medical-400/15">
-                <Search className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white">Match face</p>
-                <p className="text-xs text-slate-400">POST /api/v1/face-recognition/match/</p>
-              </div>
-            </div>
-            <form className="mt-5 space-y-4" onSubmit={handleMatch}>
-              <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Image ID</span>
-                <input
-                  value={matchForm.image_id}
-                  onChange={(event) => setMatchForm((current) => ({ ...current, image_id: event.target.value }))}
-                  className="w-full rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3 text-sm text-white outline-none transition focus:border-medical-400/40 focus:ring-2 focus:ring-medical-400/15"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Person ID</span>
-                <input
-                  value={matchForm.person_id}
-                  onChange={(event) => setMatchForm((current) => ({ ...current, person_id: event.target.value }))}
-                  className="w-full rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3 text-sm text-white outline-none transition focus:border-medical-400/40 focus:ring-2 focus:ring-medical-400/15"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={working}
-                className="inline-flex items-center gap-2 rounded-full bg-medical-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-glow transition hover:bg-medical-400 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {working ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Match face
-              </button>
-            </form>
-          </GlassCard>
-
           <GlassCard className="p-6">
             <div className="flex items-center gap-3">
               <div className="rounded-2xl bg-medical-500/12 p-3 text-medical-200 ring-1 ring-medical-400/15">
@@ -154,32 +175,118 @@ export default function FaceRecognition() {
                   value={enrollForm.person_name}
                   onChange={(event) => setEnrollForm((current) => ({ ...current, person_name: event.target.value }))}
                   className="w-full rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3 text-sm text-white outline-none transition focus:border-medical-400/40 focus:ring-2 focus:ring-medical-400/15"
+                  placeholder="Enter a display name"
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Image ID</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Person ID</span>
                 <input
-                  value={enrollForm.image_id}
-                  onChange={(event) => setEnrollForm((current) => ({ ...current, image_id: event.target.value }))}
+                  value={enrollForm.person_id}
+                  onChange={(event) => setEnrollForm((current) => ({ ...current, person_id: event.target.value }))}
                   className="w-full rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3 text-sm text-white outline-none transition focus:border-medical-400/40 focus:ring-2 focus:ring-medical-400/15"
+                  placeholder="Optional stable ID"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Notes</span>
+                <input
+                  value={enrollForm.notes}
+                  onChange={(event) => setEnrollForm((current) => ({ ...current, notes: event.target.value }))}
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3 text-sm text-white outline-none transition focus:border-medical-400/40 focus:ring-2 focus:ring-medical-400/15"
+                  placeholder="Optional context"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Face image</span>
+                <input
+                  key={enrollFileKey}
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  onChange={(event) => setEnrollForm((current) => ({ ...current, image: event.target.files?.[0] ?? null }))}
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3 text-sm text-slate-300 outline-none transition file:mr-4 file:rounded-full file:border-0 file:bg-medical-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-950 focus:border-medical-400/40 focus:ring-2 focus:ring-medical-400/15"
                 />
               </label>
               <button
                 type="submit"
-                disabled={working}
-                className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={enrollWorking}
+                className="inline-flex items-center gap-2 rounded-full bg-medical-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-glow transition hover:bg-medical-400 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {working ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {enrollWorking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 Enroll face
               </button>
             </form>
           </GlassCard>
 
-          <ComingSoonState
-            title="Face Recognition"
-            description="The matching and enrollment flows already hit the backend and return mock JSON, so the future ML implementation only needs to replace the placeholder logic on the server."
-            note="This route now functions like a real feature surface rather than a dead-end placeholder."
-          />
+          <GlassCard className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-medical-500/12 p-3 text-medical-200 ring-1 ring-medical-400/15">
+                <Search className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">Match face</p>
+                <p className="text-xs text-slate-400">POST /api/v1/face-recognition/match/</p>
+              </div>
+            </div>
+            <form className="mt-5 space-y-4" onSubmit={handleMatch}>
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Face image</span>
+                <input
+                  key={matchFileKey}
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  onChange={(event) => setMatchForm((current) => ({ ...current, image: event.target.files?.[0] ?? null }))}
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3 text-sm text-slate-300 outline-none transition file:mr-4 file:rounded-full file:border-0 file:bg-medical-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-950 focus:border-medical-400/40 focus:ring-2 focus:ring-medical-400/15"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Person ID</span>
+                <input
+                  value={matchForm.person_id}
+                  onChange={(event) => setMatchForm((current) => ({ ...current, person_id: event.target.value }))}
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3 text-sm text-white outline-none transition focus:border-medical-400/40 focus:ring-2 focus:ring-medical-400/15"
+                  placeholder="Optional filter"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Threshold</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={matchForm.threshold}
+                  onChange={(event) => setMatchForm((current) => ({ ...current, threshold: event.target.value }))}
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3 text-sm text-white outline-none transition focus:border-medical-400/40 focus:ring-2 focus:ring-medical-400/15"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={matchWorking}
+                className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {matchWorking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                Match face
+              </button>
+            </form>
+          </GlassCard>
+
+          <GlassCard className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-emerald-400/15 p-3 text-emerald-200 ring-1 ring-emerald-400/15">
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">Recognition notes</p>
+                <p className="text-xs text-slate-400">InsightFace embeddings run on the server, so this form works from any browser.</p>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 text-sm text-slate-300">
+              <div className="rounded-2xl border border-white/8 bg-white/6 p-4">Upload an image to create or verify a face embedding.</div>
+              <div className="rounded-2xl border border-white/8 bg-white/6 p-4">The backend keeps enrollments in SQLite and compares cosine similarity for matching.</div>
+            </div>
+          </GlassCard>
         </div>
       </div>
     </div>
