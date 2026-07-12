@@ -1,4 +1,4 @@
-from .efficientnet_service import (
+from .chest_xray_service import (
     EfficientNetServiceError,
     ImageProcessingError,
     ModelLoadError,

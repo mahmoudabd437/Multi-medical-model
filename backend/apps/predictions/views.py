@@ -14,11 +14,12 @@ from apps.predictions.models import ChestXrayPrediction
 from apps.predictions.serializers import (
     BrainMRIUploadSerializer,
     ChestXrayUploadSerializer,
+    DiabeticRetinopathyUploadSerializer,
     PredictionFilterSerializer,
     PredictionRequestSerializer,
 )
 from apps.predictions.services import get_prediction_strategy
-from services.ai.efficientnet_service import (
+from services.ai.chest_xray_service import (
     EfficientNetServiceError,
     ImageProcessingError,
     InvalidModelError,
@@ -33,6 +34,14 @@ from services.ai.brain_mri_service import (
     ModelLoadError as BrainMRIModelLoadError,
     PredictionError as BrainMRIPredictionError,
     predict_brain_mri,
+)
+from services.ai.diabetic_retinopathy_service import (
+    DiabeticRetinopathyServiceError,
+    ImageProcessingError as DiabeticRetinopathyImageProcessingError,
+    InvalidModelError as DiabeticRetinopathyInvalidModelError,
+    ModelLoadError as DiabeticRetinopathyModelLoadError,
+    PredictionError as DiabeticRetinopathyPredictionError,
+    predict_diabetic_retinopathy,
 )
 
 
@@ -51,6 +60,7 @@ class PredictionListView(APIView):
             items = [
                 {
                     'id': str(item.id),
+                    'modality': item.modality,
                     'study_type': item.study_type,
                     'status': 'completed',
                     'confidence': float(item.probability),
@@ -61,6 +71,8 @@ class PredictionListView(APIView):
             ]
         else:
             items = MOCK_PREDICTIONS
+            if modality:
+                items = [item for item in items if item.get('modality') == modality]
 
         return success_response(
             {
@@ -216,6 +228,68 @@ class BrainMRIPredictView(APIView):
         prediction_record = ChestXrayPrediction.objects.create(
             image=image,
             modality=ChestXrayPrediction.MODALITY_BRAIN_MRI,
+            study_id=serializer.validated_data.get('study_id', ''),
+            notes=serializer.validated_data.get('notes', ''),
+            prediction=result['prediction'],
+            confidence=Decimal(str(result['confidence'])),
+            probability=Decimal(str(result['probability'])),
+            class_index=result['class_index'],
+            model_name=result['model'],
+            threshold=Decimal('0.00'),
+            version=result['version'],
+            inference_time_seconds=Decimal(str(result['inference_time_seconds'])),
+            medical_note=result['medical_note'],
+        )
+
+        payload = {
+            'prediction': result['prediction'],
+            'confidence': result['confidence'],
+            'probability': result['probability'],
+            'class_index': result['class_index'],
+            'scores': result['scores'],
+            'model': result['model'],
+            'version': result['version'],
+            'inference_time': result['inference_time'],
+            'medical_note': result['medical_note'],
+            'created_at': prediction_record.created_at.isoformat(),
+            'id': str(prediction_record.id),
+        }
+        return Response(payload, status=status.HTTP_200_OK)
+
+
+class DiabeticRetinopathyPredictView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = DiabeticRetinopathyUploadSerializer(data=request.data)
+        if not serializer.is_valid():
+            return error_response(
+                'Invalid diabetic retinopathy upload.',
+                errors=serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        image = serializer.validated_data.get('image')
+        if image is None:
+            return error_response('An image file is required.', status_code=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            result = predict_diabetic_retinopathy(image, serializer.validated_data.get('model'))
+        except DiabeticRetinopathyInvalidModelError as exc:
+            return error_response(str(exc), status_code=status.HTTP_400_BAD_REQUEST)
+        except DiabeticRetinopathyModelLoadError as exc:
+            return error_response(str(exc), status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except DiabeticRetinopathyImageProcessingError as exc:
+            return error_response(str(exc), status_code=status.HTTP_400_BAD_REQUEST)
+        except DiabeticRetinopathyPredictionError as exc:
+            return error_response(str(exc), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except DiabeticRetinopathyServiceError as exc:
+            return error_response(str(exc), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        prediction_record = ChestXrayPrediction.objects.create(
+            image=image,
+            modality=ChestXrayPrediction.MODALITY_DIABETIC_RETINOPATHY,
             study_id=serializer.validated_data.get('study_id', ''),
             notes=serializer.validated_data.get('notes', ''),
             prediction=result['prediction'],

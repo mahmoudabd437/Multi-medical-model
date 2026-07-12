@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, ShieldCheck, Sparkles, Stethoscope, Zap } from 'lucide-react';
@@ -14,6 +15,13 @@ const quickFacts = [
 ];
 
 export default function Home() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   return (
     <div className="space-y-10 pb-4">
       <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
@@ -29,6 +37,14 @@ export default function Home() {
               This frontend is intentionally scaffolded for a future multi-model platform. It focuses on clarity,
               speed, and high-trust presentation while keeping diagnosis logic out of scope for now.
             </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">
+              Live status: online
+            </div>
+            <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">
+              Updated {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </div>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link

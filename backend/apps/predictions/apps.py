@@ -6,6 +6,6 @@ class PredictionsConfig(AppConfig):
     name = 'apps.predictions'
 
     def ready(self):
-        from services.ai.efficientnet_service import warm_up_efficientnet_model
+        from services.ai.chest_xray_service import warm_up_efficientnet_model
 
         warm_up_efficientnet_model()

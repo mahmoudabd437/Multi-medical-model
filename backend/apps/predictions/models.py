@@ -8,10 +8,12 @@ from django.db import models
 class ChestXrayPrediction(models.Model):
     MODALITY_CHEST_XRAY = 'chest_xray'
     MODALITY_BRAIN_MRI = 'brain_mri'
+    MODALITY_DIABETIC_RETINOPATHY = 'diabetic_retinopathy'
 
     MODALITY_CHOICES = [
         (MODALITY_CHEST_XRAY, 'Chest X-ray'),
         (MODALITY_BRAIN_MRI, 'Brain MRI'),
+        (MODALITY_DIABETIC_RETINOPATHY, 'Diabetic Retinopathy'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

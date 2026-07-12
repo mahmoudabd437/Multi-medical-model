@@ -6,7 +6,6 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { dashboardQuickLinks } from '@/routes/navigation';
 import { dashboardMetrics, dashboardStudies } from '@/data/mockData';
 import { cn } from '@/lib/cn';
 import { listPredictions, type PredictionRecord } from '@/services/api/predictions';
@@ -51,6 +50,24 @@ export default function Dashboard() {
   useEffect(() => {
     void loadOverview();
   }, []);
+
+  const liveWorkflowStats = [
+    {
+      label: 'Pending reviews',
+      value: loading ? '...' : String(Math.max(0, predictions.length + history.length - reports.length)),
+      icon: Clock3,
+    },
+    {
+      label: 'Live predictions',
+      value: loading ? '...' : String(predictions.length),
+      icon: ScanSearch,
+    },
+    {
+      label: 'Generated reports',
+      value: loading ? '...' : String(reports.length),
+      icon: FileClock,
+    },
+  ];
 
   const handleGenerateReport = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -132,7 +149,7 @@ export default function Dashboard() {
               <Clock3 className="h-5 w-5 text-medical-200" />
             </div>
             <div className="mt-5 space-y-4">
-              {dashboardQuickLinks.map((item) => {
+              {liveWorkflowStats.map((item) => {
                 const Icon = item.icon;
                 return (
                   <div key={item.label} className="flex items-center justify-between rounded-3xl border border-white/8 bg-white/6 px-4 py-3">
@@ -140,9 +157,9 @@ export default function Dashboard() {
                       <div className="rounded-2xl bg-medical-500/12 p-2 text-medical-200 ring-1 ring-medical-400/15">
                         <Icon className="h-4 w-4" />
                       </div>
-                      <span className="text-sm font-medium text-white">{item.label}</span>
+                      <span className="min-w-0 break-words text-sm font-medium text-white">{item.label}</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-200">{item.value}</span>
+                    <span className="shrink-0 text-sm font-semibold text-slate-200">{item.value}</span>
                   </div>
                 );
               })}

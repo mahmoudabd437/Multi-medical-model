@@ -14,11 +14,11 @@ export function ComingSoonState({ title, description, note = 'This section is sc
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-medical-500/14 text-medical-200 ring-1 ring-medical-400/20">
         <Sparkles className="h-8 w-8" />
       </div>
-      <div className="mt-5 space-y-3">
+      <div className="mt-5 min-w-0 space-y-3">
         <Badge variant="info">Coming soon</Badge>
-        <h1 className="text-3xl font-bold text-white">{title}</h1>
-        <p className="mx-auto max-w-2xl text-sm leading-6 text-slate-300">{description}</p>
-        <p className="mx-auto max-w-2xl text-sm leading-6 text-slate-400">{note}</p>
+        <h1 className="text-pretty break-words text-3xl font-bold text-white">{title}</h1>
+        <p className="mx-auto max-w-2xl break-words text-sm leading-6 text-slate-300">{description}</p>
+        <p className="mx-auto max-w-2xl break-words text-sm leading-6 text-slate-400">{note}</p>
       </div>
     </GlassCard>
   );

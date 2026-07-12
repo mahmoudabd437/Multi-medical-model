@@ -22,6 +22,7 @@ MOCK_AUTH = {
 MOCK_PREDICTIONS = [
     {
         'id': 'pred_001',
+        'modality': 'chest_xray',
         'study_type': 'Chest X-ray',
         'status': 'completed',
         'confidence': 0.988,
@@ -30,17 +31,28 @@ MOCK_PREDICTIONS = [
     },
     {
         'id': 'pred_002',
-        'study_type': 'Chest X-ray',
-        'status': 'review_pending',
+        'modality': 'brain_mri',
+        'study_type': 'Brain MRI',
+        'status': 'completed',
         'confidence': 0.941,
         'summary': 'Mild peri-hilar prominence flagged for review.',
         'created_at': '2026-07-04T08:42:00Z',
+    },
+    {
+        'id': 'pred_003',
+        'modality': 'diabetic_retinopathy',
+        'study_type': 'Diabetic Retinopathy',
+        'status': 'completed',
+        'confidence': 0.913,
+        'summary': 'Moderate diabetic retinopathy pattern detected for ophthalmology review.',
+        'created_at': '2026-07-04T08:55:00Z',
     },
 ]
 
 MOCK_HISTORY = [
     {
         'id': 'hist_001',
+        'modality': 'chest_xray',
         'study_type': 'Chest X-ray',
         'patient_ref': 'PT-10021',
         'status': 'approved',
@@ -49,11 +61,21 @@ MOCK_HISTORY = [
     },
     {
         'id': 'hist_002',
+        'modality': 'brain_mri',
         'study_type': 'Brain MRI',
         'patient_ref': 'PT-10042',
         'status': 'queued',
         'reviewer': 'Dr. Sara Ahmed',
         'created_at': '2026-07-03T14:18:00Z',
+    },
+    {
+        'id': 'hist_003',
+        'modality': 'diabetic_retinopathy',
+        'study_type': 'Diabetic Retinopathy',
+        'patient_ref': 'PT-10073',
+        'status': 'approved',
+        'reviewer': 'AI System',
+        'created_at': '2026-07-04T09:12:00Z',
     },
 ]
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.contrib import admin
 from django.urls import include, path
 
-from apps.predictions.views import BrainMRIPredictView, ChestXrayPredictView
+from apps.predictions.views import BrainMRIPredictView, ChestXrayPredictView, DiabeticRetinopathyPredictView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -14,6 +14,8 @@ urlpatterns = [
     path('api/v1/face-recognition/', include('apps.face_recognition.urls')),
     path('api/v1/predict/chest/', ChestXrayPredictView.as_view(), name='predict-chest-v1'),
     path('api/v1/predict/brain-mri/', BrainMRIPredictView.as_view(), name='predict-brain-mri-v1'),
+    path('api/v1/predict/diabetic-retinopathy/', DiabeticRetinopathyPredictView.as_view(), name='predict-diabetic-retinopathy-v1'),
     path('api/predict/chest/', ChestXrayPredictView.as_view(), name='predict-chest'),
     path('api/predict/brain-mri/', BrainMRIPredictView.as_view(), name='predict-brain-mri'),
+    path('api/predict/diabetic-retinopathy/', DiabeticRetinopathyPredictView.as_view(), name='predict-diabetic-retinopathy'),
 ]

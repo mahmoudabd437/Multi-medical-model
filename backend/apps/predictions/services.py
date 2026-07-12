@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from apps.ai.service import predict_cnn, predict_densenet, predict_efficientnet
+from services.ai.diabetic_retinopathy_service import predict_diabetic_retinopathy
 from apps.common.mock_data import MOCK_PREDICTIONS
 from apps.predictions.serializers import PredictionRequestSerializer
 
@@ -11,7 +12,8 @@ PredictionStrategy = Callable[[dict[str, Any]], dict[str, Any]]
 PREDICTION_STRATEGIES: dict[str, PredictionStrategy] = {
     'chest_xray': predict_efficientnet,
     'brain_mri': predict_densenet,
-    'skin_disease': predict_cnn,
+    'diabetic_retinopathy': predict_diabetic_retinopathy,
+    'skin_disease': predict_diabetic_retinopathy,
     'face_recognition': predict_cnn,
 }
 

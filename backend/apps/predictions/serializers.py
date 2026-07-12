@@ -6,7 +6,7 @@ from apps.predictions.models import ChestXrayPrediction
 
 
 class PredictionRequestSerializer(serializers.Serializer):
-    modality = serializers.ChoiceField(choices=['chest_xray', 'brain_mri', 'skin_disease', 'face_recognition'])
+    modality = serializers.ChoiceField(choices=['chest_xray', 'brain_mri', 'diabetic_retinopathy', 'skin_disease', 'face_recognition'])
     study_id = serializers.CharField(required=False, allow_blank=True)
     image_id = serializers.CharField(required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True)
@@ -35,6 +35,17 @@ class BrainMRIUploadSerializer(serializers.Serializer):
     notes = serializers.CharField(required=False, allow_blank=True)
     model = serializers.ChoiceField(
         choices=['efficientnetb0_mri', 'vit_mri'],
+        required=False,
+        allow_blank=True,
+    )
+
+
+class DiabeticRetinopathyUploadSerializer(serializers.Serializer):
+    image = serializers.ImageField()
+    study_id = serializers.CharField(required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    model = serializers.ChoiceField(
+        choices=['efficientnetb0_dr', 'convnext_dr'],
         required=False,
         allow_blank=True,
     )

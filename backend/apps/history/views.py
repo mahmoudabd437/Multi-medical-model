@@ -34,6 +34,8 @@ class HistoryListView(APIView):
             items = HistoryRecordSerializer(queryset, many=True).data
         else:
             items = MOCK_HISTORY
+            if modality:
+                items = [item for item in items if item.get('modality') == modality]
 
         return success_response(
             {

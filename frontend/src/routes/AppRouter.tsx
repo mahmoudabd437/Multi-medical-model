@@ -10,7 +10,7 @@ import History from '@/pages/History';
 import Home from '@/pages/Home';
 import Profile from '@/pages/Profile';
 import Settings from '@/pages/Settings';
-import SkinDisease from '@/pages/SkinDisease';
+import DiabeticRetinopathy from '@/pages/SkinDisease';
 
 export function AppRouter() {
   return (
@@ -25,7 +25,8 @@ export function AppRouter() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="chest-xray" element={<ChestXray />} />
           <Route path="brain-mri" element={<BrainMRI />} />
-          <Route path="skin-disease" element={<SkinDisease />} />
+          <Route path="diabetic-retinopathy" element={<DiabeticRetinopathy />} />
+          <Route path="skin-disease" element={<Navigate to="/diabetic-retinopathy" replace />} />
           <Route path="face-recognition" element={<FaceRecognition />} />
           <Route path="history" element={<History />} />
           <Route path="settings" element={<Settings />} />
