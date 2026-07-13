@@ -219,7 +219,3 @@ Install backend dependencies with:
 cd backend
 python -m pip install -r requirements.txt
 ```
-
-## License
-
-Add your preferred license here before publishing the repository publicly.
