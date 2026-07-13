@@ -57,7 +57,7 @@ function formatHistoryPreview(record: HistoryRecord) {
     return record.status;
   }
 
-  const percentage = (toNumber(record.probability) * 100).toFixed(1);
+  const percentage = (Number(record.probability) * 100).toFixed(1);
   return `${record.prediction} · ${percentage}%`;
 }
 
@@ -85,7 +85,7 @@ export default function ChestXray() {
     () => modelOptions.find((model) => model.value === selectedModel) ?? modelOptions[0],
     [selectedModel],
   );
-  const activeModelLabel = analysisResult?.model ?? selectedModelOption.label;
+  const activeModelLabel = analysisResult?.model_name ?? analysisResult?.model ?? selectedModelOption.label;
   const analysisHighlights = useMemo(() => buildAnalysisHighlights(activeModelLabel), [activeModelLabel]);
 
   useEffect(() => {
@@ -470,12 +470,12 @@ export default function ChestXray() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm text-slate-300">
                             <span>Confidence</span>
-                            <span>{analysisResult.confidence.toFixed(2)}%</span>
+                            <span>{Number(analysisResult.confidence).toFixed(2)}%</span>
                           </div>
                           <div className="h-2 overflow-hidden rounded-full bg-slate-800/80 ring-1 ring-white/8">
                             <motion.div
                               initial={{ width: 0 }}
-                              animate={{ width: `${analysisResult.confidence}%` }}
+                              animate={{ width: `${Number(analysisResult.confidence)}%` }}
                               transition={{ duration: 0.8, ease: 'easeOut' }}
                               className="h-full rounded-full bg-gradient-to-r from-blue-600 via-sky-500 to-emerald-400"
                             />
@@ -485,19 +485,25 @@ export default function ChestXray() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm text-slate-300">
                             <span>Probability</span>
-                            <span>{analysisResult.probability.toFixed(4)}</span>
+                            <span>{Number(analysisResult.probability).toFixed(4)}</span>
                           </div>
-                          <div className="text-sm leading-6 text-slate-400">Probability threshold: {analysisResult.threshold.toFixed(2)}</div>
+                          <div className="text-sm leading-6 text-slate-400">Probability threshold: {Number(analysisResult.threshold).toFixed(2)}</div>
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-2">
                           <div className="min-w-0 rounded-2xl border border-white/8 bg-slate-950/60 p-4">
                             <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Model</p>
-                            <p className="mt-1 break-words text-xs font-semibold leading-5 text-white sm:text-sm">{analysisResult.model}</p>
+                            <p className="mt-1 break-words text-xs font-semibold leading-5 text-white sm:text-sm">
+                              {analysisResult.model_name ?? analysisResult.model}
+                            </p>
                           </div>
                           <div className="min-w-0 rounded-2xl border border-white/8 bg-slate-950/60 p-4">
                             <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Inference time</p>
-                            <p className="mt-1 break-words text-xs font-semibold leading-5 text-white sm:text-sm">{analysisResult.inference_time}</p>
+                            <p className="mt-1 break-words text-xs font-semibold leading-5 text-white sm:text-sm">
+                              {analysisResult.inference_time_seconds != null
+                                ? `${Number(analysisResult.inference_time_seconds).toFixed(2)} sec`
+                                : analysisResult.inference_time}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -533,7 +539,7 @@ export default function ChestXray() {
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                             <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-xs">Confidence</p>
-                            <p className="mt-1 text-3xl font-bold text-white sm:mt-2 sm:text-4xl">{analysisResult.confidence.toFixed(1)}%</p>
+                            <p className="mt-1 text-3xl font-bold text-white sm:mt-2 sm:text-4xl">{Number(analysisResult.confidence).toFixed(1)}%</p>
                             <p className="mt-1 max-w-[7.5rem] text-[10px] leading-4 text-slate-400 sm:mt-2 sm:max-w-[8.5rem] sm:text-xs sm:leading-5">
                               {analysisResult.prediction === 'Pneumonia'
                                 ? 'Review recommended. Confirm findings with a radiologist.'
@@ -601,10 +607,10 @@ export default function ChestXray() {
                 <p className="font-semibold text-white">{selectedHistory.study_type}</p>
                 <p className="text-slate-400">Patient ref: {selectedHistory.patient_ref}</p>
                 <p className="text-slate-400">Prediction: {selectedHistory.prediction ?? 'N/A'}</p>
-                <p className="text-slate-400">Confidence: {toNumber(selectedHistory.confidence).toFixed(2)}%</p>
+                <p className="text-slate-400">Confidence: {Number(selectedHistory.confidence).toFixed(2)}%</p>
                 <p className="text-slate-400">Model: {selectedHistory.model_name ?? 'EfficientNetB0'}</p>
                 <p className="text-slate-400">
-                  Inference time: {selectedHistory.inference_time_seconds ? `${toNumber(selectedHistory.inference_time_seconds).toFixed(2)} sec` : 'N/A'}
+                  Inference time: {selectedHistory.inference_time_seconds ? `${Number(selectedHistory.inference_time_seconds).toFixed(2)} sec` : 'N/A'}
                 </p>
                 <p className="text-slate-400">Created: {selectedHistory.created_at ?? 'N/A'}</p>
               </div>

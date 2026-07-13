@@ -4,13 +4,11 @@ import { PublicLayout } from '@/components/layout/PublicLayout';
 import About from '@/pages/About';
 import BrainMRI from '@/pages/BrainMRI';
 import ChestXray from '@/pages/ChestXray';
-import Dashboard from '@/pages/Dashboard';
 import FaceRecognition from '@/pages/FaceRecognition';
 import History from '@/pages/History';
 import Home from '@/pages/Home';
-import Profile from '@/pages/Profile';
-import Settings from '@/pages/Settings';
-import DiabeticRetinopathy from '@/pages/SkinDisease';
+import Reports from '@/pages/Reports';
+import DiabeticRetinopathy from '@/pages/DiabeticRetinopathy';
 
 export function AppRouter() {
   return (
@@ -22,14 +20,16 @@ export function AppRouter() {
         </Route>
 
         <Route element={<DashboardLayout />}>
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard" element={<Home />} />
           <Route path="chest-xray" element={<ChestXray />} />
           <Route path="brain-mri" element={<BrainMRI />} />
           <Route path="diabetic-retinopathy" element={<DiabeticRetinopathy />} />
           <Route path="skin-disease" element={<Navigate to="/diabetic-retinopathy" replace />} />
           <Route path="face-recognition" element={<FaceRecognition />} />
           <Route path="history" element={<History />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="profile" element={<Navigate to="/" replace />} />
+          <Route path="settings" element={<Navigate to="/" replace />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

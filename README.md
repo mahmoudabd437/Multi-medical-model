@@ -1,66 +1,225 @@
 # Multi Medical Model Platform
 
-Production-oriented monorepo scaffold for a future AI medical diagnosis platform.
+Multi Medical Model Platform is a full-stack medical imaging application for running AI-assisted analysis across Chest X-ray, Brain MRI, Diabetic Retinopathy, and Face Recognition workflows. The platform combines a modern React dashboard with a Django REST backend, model inference services, history tracking, and report generation.
 
-## Architecture Goal
+## Overview
 
-This repository is split into two independently maintainable application roots:
+The system is designed as a modular medical AI workspace where users can:
 
-- `frontend/` for the React application
-- `backend/` for the Django API and platform services
+- Upload medical images and run model inference from the browser
+- Review confidence scores, probabilities, thresholds, and inference time
+- Browse historical predictions and inspection details
+- Generate and review reports
+- Access a dashboard summary of recent platform activity
 
-The current step only establishes architecture, routing, shared layout structure, auth scaffolding, configuration, and environment setup. No diagnosis logic or AI model logic is implemented yet.
+## Key Capabilities
 
-## Directory Map
+### Clinical Imaging Workflows
 
-### Root
+- Chest X-ray analysis with support for:
+  - `efficientnetb0`
+  - `densenet121`
+  - `custom_cnn`
+- Brain MRI analysis with support for:
+  - `efficientnetb0_mri`
+  - `vit_mri`
+- Diabetic Retinopathy analysis with support for:
+  - `efficientnetb0_dr`
+  - `convnext_dr`
+- Face Recognition workflows for:
+  - enrollment
+  - matching
+  - listing
+  - deletion
 
-- `README.md` documents the architecture and design decisions.
-- `.gitignore` keeps generated artifacts, local environments, and secrets out of version control.
+### User Experience
+
+- Public landing page with platform navigation
+- About page with product and architecture context
+- Dashboard shell with responsive navigation
+- Collapsible desktop sidebar
+- Prediction history and scan review views
+- Clean clinical-style UI with animated result cards
+
+### Data and Reporting
+
+- Save successful predictions to the backend
+- Review previously completed scans
+- Generate reports from platform data
+- View dashboard statistics such as prediction totals, model breakdown, and recent activity
+
+## Architecture
+
+The repository is organized as a monorepo with two main applications:
+
+- `frontend/` contains the React application
+- `backend/` contains the Django API and AI services
+
+### Frontend Stack
+
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- Framer Motion
+- React Router
+- Axios
+- Lucide React
+
+### Backend Stack
+
+- Django 5
+- Django REST Framework
+- Django REST Framework SimpleJWT
+- django-cors-headers
+- TensorFlow
+- Keras Hub
+- Pillow
+- NumPy
+- OpenCV headless
+- InsightFace
+- ONNX Runtime
+- psycopg
+- python-dotenv
+
+## Project Structure
 
 ### Frontend
 
-- `frontend/package.json` declares React 19, Vite, TypeScript, Tailwind CSS, React Router, Framer Motion, Axios, and Lucide React.
-- `frontend/src/app/` contains application-level providers and bootstrapping concerns.
-- `frontend/src/routes/` centralizes route definitions and route guards.
-- `frontend/src/layouts/` contains the reusable page shells for public, auth, and dashboard experiences.
-- `frontend/src/components/layout/` contains the shared shell pieces such as sidebar, navbar, and footer.
-- `frontend/src/components/shared/` contains reusable UI primitives.
-- `frontend/src/context/` holds authentication and theme state.
-- `frontend/src/lib/api/` is the API service layer for Axios clients and auth helpers.
-- `frontend/src/pages/` stores page-level route components, grouped by domain.
-- `frontend/src/config/` keeps runtime configuration and environment access isolated.
-- `frontend/src/data/` stores static navigation and menu definitions.
-- `frontend/src/types/` centralizes shared TypeScript contracts.
+- `frontend/src/pages/` page-level screens
+- `frontend/src/components/layout/` public and dashboard layouts
+- `frontend/src/components/navigation/` navbar and sidebar
+- `frontend/src/services/api/` API clients and request wrappers
+- `frontend/src/routes/` route definitions and navigation data
+- `frontend/src/types/` shared TypeScript types
 
 ### Backend
 
-- `backend/requirements.txt` declares Django, Django REST Framework, JWT auth, and database drivers.
-- `backend/config/settings/` separates base, development, and production configuration.
-- `backend/apps/accounts/` owns authentication and user management structure.
-- `backend/apps/core/` owns shared platform scaffolding and future cross-cutting features.
-- `backend/apps/common/` is reserved for reusable backend utilities.
+- `backend/config/` Django project configuration
+- `backend/apps/authentication/` login and token endpoints
+- `backend/apps/predictions/` prediction APIs, serializers, and dashboard stats
+- `backend/apps/history/` prediction history endpoints
+- `backend/apps/reports/` reporting endpoints
+- `backend/apps/face_recognition/` face enrollment and matching endpoints
+- `backend/services/ai/` model loading and inference logic
+- `backend/services/ai/models/` local model assets
 
-## Design Decisions
+## API Endpoints
 
-- The repository uses a monorepo layout so the frontend and backend can evolve independently while staying synchronized.
-- React routing, layout shells, and shared components are separated so pages stay thin and features remain composable.
-- Theme state is isolated in context and CSS variables so visual changes can be made centrally without rewriting components.
-- Axios is wrapped in a dedicated service layer so authentication, base URLs, and interceptors do not leak into page code.
-- Django settings are split by environment to keep development simple with SQLite while preparing production for PostgreSQL.
-- Authentication lives in a dedicated backend app so JWT, user models, and security policy can evolve without coupling to future diagnosis services.
-- No diagnosis endpoints, AI model code, or medical inference logic are included in this step.
+### Authentication
 
-## Environment Variables
+- `POST /api/v1/auth/login/`
+- `POST /api/v1/auth/refresh/`
+- `GET /api/v1/auth/me/`
+- `POST /api/v1/auth/logout/`
+- `POST /api/v1/auth/password-reset/`
+- `POST /api/v1/auth/change-password/`
+
+### Predictions
+
+- `GET /api/v1/predictions/`
+- `GET /api/v1/predictions/stats/`
+- `POST /api/v1/predictions/create/`
+- `GET /api/v1/predictions/<prediction_id>/`
+
+### Model Inference
+
+- `POST /api/v1/predict/chest/`
+- `POST /api/v1/predict/brain-mri/`
+- `POST /api/v1/predict/diabetic-retinopathy/`
+
+### History
+
+- `GET /api/v1/history/`
+- `GET /api/v1/history/<history_id>/`
+
+### Reports
+
+- `GET /api/v1/reports/`
+- `POST /api/v1/reports/generate/`
+- `GET /api/v1/reports/<report_id>/`
+
+### Face Recognition
+
+- `GET /api/v1/face-recognition/`
+- `POST /api/v1/face-recognition/enroll/`
+- `POST /api/v1/face-recognition/match/`
+- `DELETE /api/v1/face-recognition/<enrollment_id>/`
+
+## Model Notes
+
+- Chest X-ray models are expected in `backend/services/ai/models/`
+- Brain MRI models are expected in `backend/services/ai/models/`
+- Diabetic Retinopathy models are expected in `backend/services/ai/models/`
+- The backend supports both `.keras` and `.h5` assets
+- The UI displays low-confidence Diabetic Retinopathy results as `Cannot define` when confidence is below 50%, while still showing the class probabilities
+
+## Setup
 
 ### Frontend
 
-Create `frontend/.env` from `frontend/.env.example`.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ### Backend
 
-Create `backend/.env` from `backend/.env.example`.
+```bash
+cd backend
+python -m pip install -r requirements.txt
+python manage.py runserver
+```
 
-## Next Step
+## Configuration
 
-The next implementation step should wire the frontend shell to the backend auth scaffolding and then add real domain modules one bounded context at a time.
+Create local environment files for each app:
+
+- `frontend/.env`
+- `backend/.env`
+
+Use the same variable names that already exist in the project templates.
+
+## Notes
+
+- The dashboard includes a collapsible sidebar on desktop.
+- The public navbar includes Home, Dashboard, and About navigation.
+- Non-functional search controls were intentionally removed from the navigation.
+- History entries are available for completed predictions.
+- Saved outputs include model metadata, confidence, probability, and inference timing.
+
+## Development Tips
+
+- Place actual model binaries inside `backend/services/ai/models/`
+- Keep the frontend and backend running together when testing the full workflow
+- Rebuild the frontend after changing navigation or page components
+- Restart Django after replacing model files or backend dependencies
+
+## Troubleshooting
+
+### Model file errors
+
+If the backend reports a model loading error, verify that the file in `backend/services/ai/models/` is a real model artifact and not a placeholder or Git LFS pointer.
+
+### Frontend build issues
+
+Run the frontend build locally to confirm TypeScript and Vite compilation:
+
+```bash
+cd frontend
+npm run build
+```
+
+### Backend dependency issues
+
+Install backend dependencies with:
+
+```bash
+cd backend
+python -m pip install -r requirements.txt
+```
+
+## License
+
+Add your preferred license here before publishing the repository publicly.

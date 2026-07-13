@@ -1,9 +1,7 @@
-import { Menu, Microscope, Search } from 'lucide-react';
+import { Menu, Microscope } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import { publicNavigation } from '@/routes/navigation';
 import { Avatar } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
 
@@ -47,16 +45,6 @@ export function Navbar({ mode, onMenuClick, title = 'Medical AI Dashboard', subt
               </NavLink>
             ))}
           </nav>
-
-          <div className="flex items-center gap-3">
-            <Badge variant="info" className="hidden sm:inline-flex">
-              Dark only
-            </Badge>
-            <Button type="button" variant="ghost" className="hidden sm:inline-flex">
-              <Search className="h-4 w-4" />
-              Search
-            </Button>
-          </div>
         </div>
       </header>
     );
@@ -85,17 +73,11 @@ export function Navbar({ mode, onMenuClick, title = 'Medical AI Dashboard', subt
           </div>
         </div>
 
-        <div className="flex max-w-full items-center gap-3">
-          <Button type="button" variant="secondary" className="hidden sm:inline-flex">
-            <Search className="h-4 w-4" />
-            Search studies
-          </Button>
-          <div className="flex min-w-0 max-w-full items-center gap-3 rounded-full border border-white/10 bg-white/6 px-3 py-2">
-            <Avatar name={user?.name ?? 'Guest'} initials={user?.initials ?? 'GD'} className="h-9 w-9" />
-            <div className="hidden min-w-0 text-left sm:block">
-              <p className="truncate text-sm font-semibold text-white">{user?.name ?? 'Guest User'}</p>
-              <p className="truncate text-xs text-slate-400">{user?.role ?? 'Viewer'}</p>
-            </div>
+        <div className="flex min-w-0 max-w-full items-center gap-3 rounded-full border border-white/10 bg-white/6 px-3 py-2">
+          <Avatar name={user?.name ?? 'Guest'} initials={user?.initials ?? 'GD'} className="h-9 w-9" />
+          <div className="hidden min-w-0 text-left sm:block">
+            <p className="truncate text-sm font-semibold text-white">{user?.name ?? 'Guest User'}</p>
+            <p className="truncate text-xs text-slate-400">{user?.role ?? 'Viewer'}</p>
           </div>
         </div>
       </div>

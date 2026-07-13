@@ -27,6 +27,7 @@ MODEL_VERSION = '1.0.0'
 IMAGE_SIZE = (224, 224)
 THRESHOLD = 0.5
 MODEL_DIR = Path(settings.BASE_DIR) / 'services' / 'ai' / 'models'
+LFS_POINTER_PREFIX = 'version https://git-lfs.github.com/spec/v1'
 
 
 def _scale_pixels(array: np.ndarray) -> np.ndarray:
@@ -112,6 +113,15 @@ def _get_model_config(model_key: str | None) -> ChestXrayModelConfig:
         raise InvalidModelError(f'Unsupported chest X-ray model. Choose one of: {supported_models}.') from exc
 
 
+def _is_git_lfs_pointer(model_path: Path) -> bool:
+    try:
+        if model_path.stat().st_size > 1024:
+            return False
+        return model_path.read_text(encoding='utf-8', errors='ignore').startswith(LFS_POINTER_PREFIX)
+    except Exception:
+        return False
+
+
 def _remove_unsupported_quantization_config(value: Any) -> int:
     removed_count = 0
 
@@ -133,9 +143,9 @@ def _remove_unsupported_quantization_config(value: Any) -> int:
 def _load_model_with_compatibility_fallback(model_path: Path) -> Any:
     try:
         return keras_load_model(model_path, compile=False)
-    except TypeError as exc:
-        if 'quantization_config' not in str(exc):
-            raise
+    except Exception as exc:
+        if not isinstance(exc, TypeError) or 'quantization_config' not in str(exc):
+            raise ModelLoadError(f'Failed to load chest X-ray model from {model_path.name}: {exc}') from exc
 
         temp_path = None
         try:
@@ -157,6 +167,8 @@ def _load_model_with_compatibility_fallback(model_path: Path) -> Any:
                         target_archive.writestr(archive_item, archive_data)
 
             return keras_load_model(temp_path, compile=False)
+        except Exception as fallback_exc:
+            raise ModelLoadError(f'Failed to load chest X-ray model from {model_path.name}: {fallback_exc}') from fallback_exc
         finally:
             if temp_path is not None:
                 temp_path.unlink(missing_ok=True)
@@ -174,6 +186,11 @@ def _load_model_once(model_key: str = DEFAULT_MODEL_KEY) -> Any:
     model_path = model_config.path
     if not model_path.exists():
         raise ModelLoadError(f'{model_config.name} model file was not found at {model_path}.')
+    if _is_git_lfs_pointer(model_path):
+        raise ModelLoadError(
+            f'{model_config.name} model file at {model_path.name} is a Git LFS pointer, not the actual model binary. '
+            f'Please fetch the real file with Git LFS or replace it with the exported {model_config.name} model.'
+        )
 
     return _load_model_with_compatibility_fallback(model_path)
 

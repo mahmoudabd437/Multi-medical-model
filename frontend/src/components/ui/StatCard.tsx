@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import type { MetricCard } from '@/types/dashboard';
 import { cn } from '@/lib/cn';
 
@@ -18,10 +17,7 @@ export function StatCard({ metric, delay = 0 }: StatCardProps) {
   const Icon = metric.icon;
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay }}
+    <article
       className="glass-panel min-w-0 rounded-3xl p-5"
     >
       <div className={cn('rounded-2xl bg-gradient-to-br p-3', toneMap[metric.tone])}>
@@ -39,6 +35,6 @@ export function StatCard({ metric, delay = 0 }: StatCardProps) {
           <span className="min-w-0 break-words text-left text-white/65 sm:text-right">{metric.note}</span>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }

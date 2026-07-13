@@ -399,8 +399,8 @@ export default function BrainMRI() {
                         <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500">Class index {analysisResult.class_index}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold text-white">{analysisResult.confidence.toFixed(1)}%</p>
-                        <p className="mt-1 text-xs text-slate-400">{analysisResult.inference_time}</p>
+                        <p className="text-3xl font-bold text-white">{Number(analysisResult.confidence).toFixed(1)}%</p>
+                        <p className="mt-1 text-xs text-slate-400">{Number(analysisResult.inference_time).toFixed(2)} sec</p>
                       </div>
                     </div>
 
@@ -415,12 +415,12 @@ export default function BrainMRI() {
                       <div key={label} className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-slate-300">{label}</span>
-                          <span className="font-semibold text-white">{(score * 100).toFixed(1)}%</span>
+                          <span className="font-semibold text-white">{(Number(score) * 100).toFixed(1)}%</span>
                         </div>
                         <div className="h-2 overflow-hidden rounded-full bg-slate-800/80 ring-1 ring-white/8">
                           <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${Math.max(0, Math.min(100, score * 100))}%` }}
+                            animate={{ width: `${Math.max(0, Math.min(100, Number(score) * 100))}%` }}
                             transition={{ duration: 0.65, ease: 'easeOut' }}
                             className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-400"
                           />
@@ -463,10 +463,10 @@ export default function BrainMRI() {
                 <p className="font-semibold text-white">{selectedHistory.study_type}</p>
                 <p className="text-slate-400">Patient ref: {selectedHistory.patient_ref}</p>
                 <p className="text-slate-400">Prediction: {selectedHistory.prediction ?? 'N/A'}</p>
-                <p className="text-slate-400">Confidence: {toNumber(selectedHistory.confidence).toFixed(2)}%</p>
+                <p className="text-slate-400">Confidence: {Number(selectedHistory.confidence).toFixed(2)}%</p>
                 <p className="text-slate-400">Model: {selectedHistory.model_name ?? 'N/A'}</p>
                 <p className="text-slate-400">
-                  Inference time: {selectedHistory.inference_time_seconds ? `${toNumber(selectedHistory.inference_time_seconds).toFixed(2)} sec` : 'N/A'}
+                  Inference time: {selectedHistory.inference_time_seconds ? `${Number(selectedHistory.inference_time_seconds).toFixed(2)} sec` : 'N/A'}
                 </p>
                 <p className="text-slate-400">Created: {selectedHistory.created_at ?? 'N/A'}</p>
               </div>

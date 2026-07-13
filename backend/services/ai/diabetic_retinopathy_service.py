@@ -40,6 +40,7 @@ CLASS_LABELS = [
     'Severe'
 ]
 MODEL_DIR = Path(settings.BASE_DIR) / 'services' / 'ai' / 'models'
+LFS_POINTER_PREFIX = 'version https://git-lfs.github.com/spec/v1'
 
 
 def _scale_pixels(array: np.ndarray) -> np.ndarray:
@@ -115,15 +116,37 @@ def _get_model_config(model_key: str | None) -> DiabeticRetinopathyModelConfig:
         raise InvalidModelError(f'Unsupported diabetic retinopathy model. Choose one of: {supported_models}.') from exc
 
 
+def _is_git_lfs_pointer(model_path: Path) -> bool:
+    try:
+        if model_path.stat().st_size > 1024:
+            return False
+        return model_path.read_text(encoding='utf-8', errors='ignore').startswith(LFS_POINTER_PREFIX)
+    except Exception:
+        return False
+
+
 def _load_model_with_compatibility_fallback(model_path: Path, model_config: DiabeticRetinopathyModelConfig) -> Any:
     try:
         return keras_load_model(model_path, compile=False, safe_mode=False)
     except Exception as exc:
         fallback_message = str(exc)
-        if 'No model config found' not in fallback_message and 'Unable to open file' not in fallback_message:
-            raise
+        fallback_triggers = (
+            'No model config found',
+            'Unable to open file',
+            'Unknown layer',
+            'Could not deserialize',
+            'Failed to convert',
+        )
 
-        return _load_weights_archive(model_path, model_config)
+        if any(trigger in fallback_message for trigger in fallback_triggers):
+            try:
+                return _load_weights_archive(model_path, model_config)
+            except Exception as fallback_exc:
+                raise ModelLoadError(
+                    f'Failed to load diabetic retinopathy model from {model_path.name}: {fallback_exc}'
+                ) from fallback_exc
+
+        raise ModelLoadError(f'Failed to load diabetic retinopathy model from {model_path.name}: {exc}') from exc
 
 
 def _load_weights_archive(model_path: Path, model_config: DiabeticRetinopathyModelConfig) -> Any:
@@ -175,6 +198,12 @@ def _load_model_once(model_key: str = DEFAULT_MODEL_KEY) -> Any:
     if not model_path.exists():
         expected_files = ', '.join(model_config.filenames)
         raise ModelLoadError(f'{model_config.name} model file was not found. Expected one of: {expected_files}.')
+    if _is_git_lfs_pointer(model_path):
+        expected_files = ', '.join(model_config.filenames)
+        raise ModelLoadError(
+            f'{model_config.name} model file at {model_path.name} is a Git LFS pointer, not the actual model binary. '
+            f'Please fetch the real file with Git LFS or replace it with the exported weights file from: {expected_files}.'
+        )
 
     return _load_model_with_compatibility_fallback(model_path, model_config)
 

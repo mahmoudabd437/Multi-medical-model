@@ -57,6 +57,11 @@ class ChestXrayPredictionSerializer(serializers.ModelSerializer):
     reviewer = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     inference_time = serializers.SerializerMethodField()
+    filename = serializers.CharField(read_only=True)
+    image_url = serializers.SerializerMethodField()
+    upload_time = serializers.DateTimeField(read_only=True)
+    prediction_time = serializers.DateTimeField(read_only=True)
+    processing_time = serializers.FloatField(read_only=True)
 
     class Meta:
         model = ChestXrayPrediction
@@ -65,8 +70,10 @@ class ChestXrayPredictionSerializer(serializers.ModelSerializer):
             'modality',
             'study_type',
             'patient_ref',
+            'filename',
             'status',
             'reviewer',
+            'image_url',
             'prediction',
             'confidence',
             'probability',
@@ -74,6 +81,9 @@ class ChestXrayPredictionSerializer(serializers.ModelSerializer):
             'model_name',
             'threshold',
             'version',
+            'upload_time',
+            'prediction_time',
+            'processing_time',
             'inference_time',
             'medical_note',
             'created_at',
@@ -90,3 +100,9 @@ class ChestXrayPredictionSerializer(serializers.ModelSerializer):
 
     def get_inference_time(self, instance: ChestXrayPrediction) -> str:
         return f'{instance.inference_time_seconds:.2f} sec'
+
+    def get_image_url(self, instance: ChestXrayPrediction) -> str:
+        try:
+            return instance.image.url
+        except Exception:
+            return ''

@@ -1,18 +1,23 @@
 import { apiClient } from '@/services/api/client';
 import type { ApiResponse, PaginatedResponse } from '@/services/api/types';
+import type { HistoryRecord } from '@/services/api/history';
 
-export type ReportRecord = {
-  id: string;
-  title: string;
-  status: string;
-  format: string;
-  generated_at?: string;
+export type ReportRecord = HistoryRecord;
+
+export type ReportListParams = {
+  modality?: string;
+  search?: string;
+  ordering?: string;
+  date?: string;
+  page?: number;
+  page_size?: number;
 };
 
 export type ReportRequest = {
   title: string;
-  format: 'pdf' | 'xlsx' | 'csv';
+  format: 'pdf' | 'csv';
   scope?: string;
+  modality?: string;
 };
 
 export type ReportCreateResponse = {
@@ -22,9 +27,9 @@ export type ReportCreateResponse = {
   input: ReportRequest;
 };
 
-export async function listReports(params?: Record<string, string | number | undefined>): Promise<PaginatedResponse<ReportRecord>> {
+export async function listReports(params?: ReportListParams): Promise<PaginatedResponse<ReportRecord> & { page?: number; page_size?: number }> {
   const response = await apiClient.get<ApiResponse<PaginatedResponse<ReportRecord>>>('/reports/', { params });
-  return response.data.data;
+  return response.data.data as PaginatedResponse<ReportRecord> & { page?: number; page_size?: number };
 }
 
 export async function generateReport(payload: ReportRequest): Promise<ReportCreateResponse> {

@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 
 from django.db import models
+from django.utils import timezone
 
 
 class ChestXrayPrediction(models.Model):
@@ -18,6 +19,7 @@ class ChestXrayPrediction(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     image = models.ImageField(upload_to='chest_xray/')
+    filename = models.CharField(max_length=255, blank=True, default='')
     modality = models.CharField(max_length=32, choices=MODALITY_CHOICES, default=MODALITY_CHEST_XRAY)
     study_id = models.CharField(max_length=128, blank=True, default='')
     notes = models.TextField(blank=True, default='')
@@ -28,6 +30,9 @@ class ChestXrayPrediction(models.Model):
     model_name = models.CharField(max_length=64)
     threshold = models.DecimalField(max_digits=4, decimal_places=2, default=0.5)
     version = models.CharField(max_length=16, default='1.0.0')
+    upload_time = models.DateTimeField(default=timezone.now)
+    prediction_time = models.DateTimeField(null=True, blank=True)
+    processing_time = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     inference_time_seconds = models.DecimalField(max_digits=6, decimal_places=2)
     medical_note = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

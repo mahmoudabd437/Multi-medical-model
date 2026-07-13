@@ -51,9 +51,11 @@ export type ChestXrayAnalyzeResponse = {
   confidence: number;
   probability: number;
   class_index: 0 | 1;
+  model_name?: string;
   model: string;
   threshold: number;
   version: string;
+  inference_time_seconds?: number;
   inference_time: string;
   medical_note: string;
   created_at: string;

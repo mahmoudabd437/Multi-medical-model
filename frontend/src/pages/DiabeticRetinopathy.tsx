@@ -63,6 +63,8 @@ export default function DiabeticRetinopathy() {
     () => modelOptions.find((model) => model.value === selectedModel) ?? modelOptions[0],
     [selectedModel],
   );
+  const isLowConfidence = toNumber(analysisResult?.confidence) < 50;
+  const displayedPrediction = analysisResult ? (isLowConfidence ? 'Cannot define' : analysisResult.prediction) : null;
   const sortedScores = useMemo(
     () => Object.entries(analysisResult?.scores ?? {}).sort((a, b) => b[1] - a[1]),
     [analysisResult],
@@ -396,8 +398,8 @@ export default function DiabeticRetinopathy() {
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Prediction result</p>
                 <h3 className="mt-2 text-xl font-bold text-white">{analysisResult?.model ?? selectedModelOption.label} output</h3>
               </div>
-              <Badge variant={getResultVariant(analysisResult?.prediction)}>
-                {analysisResult ? analysisResult.prediction : 'Waiting for analysis'}
+              <Badge variant={getResultVariant(displayedPrediction ?? analysisResult?.prediction)}>
+                {analysisResult ? displayedPrediction ?? analysisResult.prediction : 'Waiting for analysis'}
               </Badge>
             </div>
 
@@ -414,14 +416,24 @@ export default function DiabeticRetinopathy() {
                   <div className="rounded-[1.8rem] border border-white/8 bg-white/5 p-5">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
-                        <p className="text-sm font-semibold text-white">{analysisResult.prediction}</p>
+                        <p className="text-sm font-semibold text-white">{displayedPrediction ?? analysisResult.prediction}</p>
                         <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500">Class index {analysisResult.class_index}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold text-white">{analysisResult.confidence.toFixed(1)}%</p>
+                        <p className="text-3xl font-bold text-white">{Number(analysisResult.confidence).toFixed(1)}%</p>
                         <p className="mt-1 text-xs text-slate-400">{analysisResult.inference_time}</p>
                       </div>
                     </div>
+
+                    {isLowConfidence ? (
+                      <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <p>
+                          Confidence is below 50%, so the result is shown as <span className="font-semibold text-white">Cannot define</span>. The
+                          individual class probabilities remain visible below.
+                        </p>
+                      </div>
+                    ) : null}
 
                     <div className="mt-5">
                       <ProgressBar value={analysisResult.confidence} />
@@ -434,12 +446,12 @@ export default function DiabeticRetinopathy() {
                       <div key={label} className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-slate-300">{label}</span>
-                          <span className="font-semibold text-white">{(score * 100).toFixed(1)}%</span>
+                          <span className="font-semibold text-white">{(Number(score) * 100).toFixed(1)}%</span>
                         </div>
                         <div className="h-2 overflow-hidden rounded-full bg-slate-800/80 ring-1 ring-white/8">
                           <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${Math.max(0, Math.min(100, score * 100))}%` }}
+                            animate={{ width: `${Math.max(0, Math.min(100, Number(score) * 100))}%` }}
                             transition={{ duration: 0.65, ease: 'easeOut' }}
                             className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-lime-300"
                           />
@@ -482,10 +494,10 @@ export default function DiabeticRetinopathy() {
                 <p className="font-semibold text-white">{selectedHistory.study_type}</p>
                 <p className="text-slate-400">Patient ref: {selectedHistory.patient_ref}</p>
                 <p className="text-slate-400">Prediction: {selectedHistory.prediction ?? 'N/A'}</p>
-                <p className="text-slate-400">Confidence: {toNumber(selectedHistory.confidence).toFixed(2)}%</p>
+                <p className="text-slate-400">Confidence: {Number(selectedHistory.confidence).toFixed(2)}%</p>
                 <p className="text-slate-400">Model: {selectedHistory.model_name ?? 'N/A'}</p>
                 <p className="text-slate-400">
-                  Inference time: {selectedHistory.inference_time_seconds ? `${toNumber(selectedHistory.inference_time_seconds).toFixed(2)} sec` : 'N/A'}
+                  Inference time: {selectedHistory.inference_time_seconds ? `${Number(selectedHistory.inference_time_seconds).toFixed(2)} sec` : 'N/A'}
                 </p>
                 <p className="text-slate-400">Created: {selectedHistory.created_at ?? 'N/A'}</p>
               </div>

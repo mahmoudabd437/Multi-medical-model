@@ -1,200 +1,184 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Clock3, FileClock, Search, Loader2 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { SectionHeader } from '@/components/ui/SectionHeader';
+import { useEffect, useMemo, useState } from 'react';
+import { Brain, Camera, FileClock, FileText, Loader2, Search, ShieldCheck, Stethoscope } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { getHistory, listHistory, type HistoryRecord } from '@/services/api/history';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { listHistory, type HistoryRecord } from '@/services/api/history';
 
-const initialFilter = {
-  status: '',
-  search: '',
-};
+const modelFilters = [
+  { label: 'All', value: 'all', icon: FileClock },
+  { label: 'Chest X-ray', value: 'chest_xray', icon: Stethoscope },
+  { label: 'Brain MRI', value: 'brain_mri', icon: Brain },
+  { label: 'Diabetic Retinopathy', value: 'diabetic_retinopathy', icon: ShieldCheck },
+  { label: 'Face Recognition', value: 'face_recognition', icon: Camera },
+] as const;
+
+function formatDateTime(value?: string) {
+  if (!value) {
+    return 'N/A';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleString();
+}
 
 export default function History() {
-  const [filter, setFilter] = useState(initialFilter);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [records, setRecords] = useState<HistoryRecord[]>([]);
-  const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
-
-  const loadHistory = async (params = filter) => {
-    try {
-      setRefreshing(true);
-      setError(null);
-      const response = await listHistory(params);
-      setRecords(response.items);
-      setSelectedRecord(response.items[0] ?? null);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Failed to load history.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const [loading, setLoading] = useState(true);
+  const [selectedModel, setSelectedModel] = useState<(typeof modelFilters)[number]['value']>('all');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        setLoading(true);
+        const response = await listHistory({
+          modality: selectedModel === 'all' ? undefined : selectedModel,
+          search: search.trim() || undefined,
+          ordering: '-prediction_time',
+          page_size: 100,
+        });
+        setRecords(response.items);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     void loadHistory();
-  }, []);
+  }, [selectedModel, search]);
 
-  const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await loadHistory(filter);
-  };
-
-  const openRecord = async (historyId: string) => {
-    try {
-      setError(null);
-      const detail = await getHistory(historyId);
-      setSelectedRecord(detail);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Unable to load history detail.');
+  const filteredRecords = useMemo(() => {
+    const normalized = search.trim().toLowerCase();
+    if (!normalized) {
+      return records;
     }
-  };
+
+    return records.filter((record) =>
+      [record.filename, record.prediction, record.model_name, record.study_type]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(normalized)),
+    );
+  }, [records, search]);
 
   return (
     <div className="space-y-8 pb-4">
-      <motion.section initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
+      <section>
         <SectionHeader
           eyebrow="History"
-          title="Audit trail and study history"
-          description="The history API now powers this screen so it behaves like a live operational record instead of a static list."
-          action={<Badge variant="info">API connected</Badge>}
+          title="Prediction history"
+          description="A unified audit trail for all stored predictions, with model filtering and medical-grade presentation."
+          action={<Badge variant="info">{filteredRecords.length} records</Badge>}
         />
-      </motion.section>
-
-      {error ? (
-        <div className="rounded-3xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
-          {error}
-        </div>
-      ) : null}
+      </section>
 
       <GlassCard className="p-6">
-        <form className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end" onSubmit={handleSearch}>
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Status filter</span>
-            <input
-              value={filter.status}
-              onChange={(event) => setFilter((current) => ({ ...current, status: event.target.value }))}
-              className="w-full rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3 text-sm text-white outline-none transition focus:border-medical-400/40 focus:ring-2 focus:ring-medical-400/15"
-              placeholder="approved"
-            />
-          </label>
+        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Filter by model</span>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              {modelFilters.map((option) => {
+                const Icon = option.icon;
+                const active = selectedModel === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setSelectedModel(option.value)}
+                    className={`flex items-center gap-3 rounded-3xl border px-4 py-3 text-left transition ${
+                      active ? 'border-medical-400/30 bg-medical-400/12 text-white shadow-glow' : 'border-white/8 bg-white/6 text-slate-300 hover:border-white/12 hover:bg-white/8'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 text-medical-200" />
+                    <span className="text-sm font-semibold">{option.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <label className="space-y-2">
             <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Search</span>
-            <input
-              value={filter.search}
-              onChange={(event) => setFilter((current) => ({ ...current, search: event.target.value }))}
-              className="w-full rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3 text-sm text-white outline-none transition focus:border-medical-400/40 focus:ring-2 focus:ring-medical-400/15"
-              placeholder="Chest X-ray"
-            />
+            <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3">
+              <Search className="h-4 w-4 text-slate-500" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+                placeholder="Search file, model, or prediction"
+              />
+            </div>
           </label>
-          <button
-            type="submit"
-            disabled={refreshing}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-medical-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-glow transition hover:bg-medical-400 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-            Search history
-          </button>
-        </form>
+        </div>
       </GlassCard>
 
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-medical-300">Recent activity</p>
-              <h3 className="mt-2 text-2xl font-bold text-white">Timeline</h3>
-            </div>
-            <Badge variant="success">{loading ? 'Loading' : `${records.length} items`}</Badge>
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-medical-300">Audit trail</p>
+            <h3 className="mt-2 text-2xl font-bold text-white">Prediction records</h3>
           </div>
+          <Badge variant={loading ? 'warning' : 'success'}>{loading ? 'Loading' : `${filteredRecords.length} items`}</Badge>
+        </div>
 
-          <div className="mt-6 space-y-3">
-            {records.length > 0 ? (
-              records.map((record) => (
-                <button
-                  key={record.id}
-                  type="button"
-                  onClick={() => void openRecord(record.id)}
-                  className="w-full rounded-3xl border border-white/8 bg-white/6 p-4 text-left transition hover:border-white/14 hover:bg-white/8"
-                >
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-2xl bg-medical-500/12 p-3 text-medical-200 ring-1 ring-medical-400/15">
-                          <FileClock className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <h4 className="text-base font-semibold text-white">{record.study_type}</h4>
-                          <p className="mt-1 text-sm text-slate-400">{record.patient_ref}</p>
-                        </div>
-                      </div>
+        <div className="mt-6 space-y-3">
+          {loading ? (
+            <div className="rounded-3xl border border-white/8 bg-white/6 p-4 text-sm text-slate-400">
+              <Loader2 className="inline h-4 w-4 animate-spin" /> Loading prediction history...
+            </div>
+          ) : filteredRecords.length > 0 ? (
+              filteredRecords.map((record) => (
+              <div key={record.id} className="rounded-3xl border border-white/8 bg-white/6 p-4 transition hover:border-white/14 hover:bg-white/8">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-xs font-semibold text-slate-300">
+                      {(record.study_type ?? 'NA').slice(0, 2).toUpperCase()}
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-300">
-                      <div className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5">{record.created_at}</div>
-                      <div className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5">{record.reviewer}</div>
-                      <div className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5">{record.status}</div>
+                    <div>
+                      <h4 className="text-base font-semibold text-white">{record.study_type}</h4>
+                      <p className="mt-1 text-sm text-slate-400">{record.filename ?? 'Unknown file'}</p>
+                      <p className="mt-1 text-sm text-slate-300">{record.prediction ?? 'N/A'} - {record.model_name ?? 'N/A'}</p>
                     </div>
                   </div>
-                </button>
-              ))
-            ) : loading ? (
-              <div className="rounded-3xl border border-white/8 bg-white/6 p-4 text-sm text-slate-400">Loading history records...</div>
-            ) : (
-              <EmptyState
-                title="No history items"
-                description="The backend returned an empty audit trail for the current filter set."
-                icon={Clock3}
-              />
-            )}
-          </div>
-        </GlassCard>
 
-        <div className="space-y-4">
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-medical-500/12 p-3 text-medical-200 ring-1 ring-medical-400/15">
-                <Clock3 className="h-4 w-4" />
+                  <div className="grid gap-2 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-5">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Confidence</p>
+                      <p className="mt-1 font-semibold text-white">{(record.confidence ?? 0).toFixed(2)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Date</p>
+                      <p className="mt-1 font-semibold text-white">{record.date ?? formatDateTime(record.prediction_time).split(',')[0]}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Time</p>
+                      <p className="mt-1 font-semibold text-white">{record.time ?? formatDateTime(record.prediction_time).split(',')[1] ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Model</p>
+                      <p className="mt-1 font-semibold text-white">{record.model_name ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Status</p>
+                      <p className="mt-1 font-semibold text-white">{record.status}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-white">Selected record</p>
-                <p className="text-xs text-slate-400">Loaded directly from the backend detail endpoint</p>
-              </div>
-            </div>
-
-            {selectedRecord ? (
-              <div className="mt-5 space-y-3 rounded-3xl border border-white/8 bg-white/6 p-4 text-sm text-slate-300">
-                <p className="font-semibold text-white">{selectedRecord.study_type}</p>
-                <p>Patient ref: {selectedRecord.patient_ref}</p>
-                <p>Status: {selectedRecord.status}</p>
-                <p>Reviewer: {selectedRecord.reviewer}</p>
-                <p>Created: {selectedRecord.created_at ?? 'N/A'}</p>
-              </div>
-            ) : (
-              <EmptyState
-                title="Select a record"
-                description="Pick a history item to inspect the detail endpoint response."
-                icon={FileClock}
-              />
-            )}
-          </GlassCard>
-
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-medical-500/12 p-3 text-medical-200 ring-1 ring-medical-400/15">
-                <FileClock className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white">Retention</p>
-                <p className="text-xs text-slate-400">History is ready for future filters and exports</p>
-              </div>
-            </div>
-          </GlassCard>
+            ))
+          ) : (
+            <EmptyState
+              title="No history records"
+              description="There are no records for the selected model and search criteria."
+              icon={FileText}
+            />
+          )}
         </div>
-      </section>
+      </GlassCard>
     </div>
   );
 }
